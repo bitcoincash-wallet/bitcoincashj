@@ -20,11 +20,7 @@ package org.bitcoinj.params;
 import java.math.BigInteger;
 import java.util.Date;
 
-import org.bitcoinj.core.Block;
-import org.bitcoinj.core.NetworkParameters;
-import org.bitcoinj.core.StoredBlock;
-import org.bitcoinj.core.Utils;
-import org.bitcoinj.core.VerificationException;
+import org.bitcoinj.core.*;
 import org.bitcoinj.store.BlockStore;
 import org.bitcoinj.store.BlockStoreException;
 
@@ -58,10 +54,12 @@ public class TestNet3Params extends AbstractBitcoinNetParams {
         alertSigningKey = Utils.HEX.decode("04302390343f91cc401d56d68b123028bf52e5fca1939df127f63c6467cdf9c8e2c14b61104cf817d0b780da337893ecc4aaff1309e536162dabbdb45200ca2b0a");
 
         dnsSeeds = new String[] {
-                "testnet-seed.bitcoin.jonasschnelli.ch", // Jonas Schnelli
-                "testnet-seed.bluematt.me",              // Matt Corallo
-                "testnet-seed.bitcoin.petertodd.org",    // Peter Todd
-                "testnet-seed.bitcoin.schildbach.de",    // Andreas Schildbach
+               "testnet-seed.bitcoinabc.org",
+                "testnet-seed-abc.bitcoinforks.org",
+                "testnet-seed.bitcoinunlimited.info",
+                "testnet-seed.bitprim.org",
+                "testnet-seed.deadalnix.me",
+                "testnet-seeder.criptolayer.net"
         };
         addrSeeds = null;
         bip32HeaderPub = 0x043587CF;
@@ -90,7 +88,7 @@ public class TestNet3Params extends AbstractBitcoinNetParams {
 
     @Override
     public void checkDifficultyTransitions(final StoredBlock storedPrev, final Block nextBlock,
-        final BlockStore blockStore) throws VerificationException, BlockStoreException {
+                                           final BlockStore blockStore, AbstractBlockChain blockChain) throws VerificationException, BlockStoreException {
         if (!isDifficultyTransitionPoint(storedPrev) && nextBlock.getTime().after(testnetDiffDate)) {
             Block prev = storedPrev.getHeader();
 
@@ -116,7 +114,7 @@ public class TestNet3Params extends AbstractBitcoinNetParams {
                 	Long.toHexString(nextBlock.getDifficultyTarget()));
             }
         } else {
-            super.checkDifficultyTransitions(storedPrev, nextBlock, blockStore);
+            super.checkDifficultyTransitions(storedPrev, nextBlock, blockStore, blockChain);
         }
     }
 }
