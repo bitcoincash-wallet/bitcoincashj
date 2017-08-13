@@ -254,7 +254,7 @@ public abstract class NetworkParameters {
      *
      * @throws VerificationException if the block's difficulty is not correct.
      */
-    public abstract void checkDifficultyTransitions(StoredBlock storedPrev, Block next, final BlockStore blockStore) throws VerificationException, BlockStoreException;
+    public abstract void checkDifficultyTransitions(StoredBlock storedPrev, Block next, final BlockStore blockStore, final AbstractBlockChain blockChain) throws VerificationException, BlockStoreException;
 
     /**
      * Returns true if the block height is either not a checkpoint, or is a checkpoint and the hash matches.
@@ -527,7 +527,7 @@ public abstract class NetworkParameters {
         MINIMUM(70000),
         PONG(60001),
         BLOOM_FILTER(70000),
-        CURRENT(70001);
+        CURRENT(70013);
 
         private final int bitcoinProtocol;
 

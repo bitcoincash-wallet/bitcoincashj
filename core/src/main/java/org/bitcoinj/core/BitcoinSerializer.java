@@ -17,6 +17,8 @@
 
 package org.bitcoinj.core;
 
+import org.bitcoinj.core.listeners.FeeFilterMessage;
+import org.bitcoinj.core.listeners.SendHeadersMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -229,6 +231,10 @@ public class BitcoinSerializer extends MessageSerializer {
             return new UTXOsMessage(params, payloadBytes);
         } else if (command.equals("getutxos")) {
             return new GetUTXOsMessage(params, payloadBytes);
+        } else if (command.equals("sendheaders")) {
+            return new SendHeadersMessage(params);
+        } else if (command.equals("feefilter")) {
+            return new FeeFilterMessage(params);
         } else {
             log.warn("No support for deserializing message with name {}", command);
             return new UnknownMessage(params, command, payloadBytes);
