@@ -485,7 +485,7 @@ public abstract class AbstractBlockChain {
             } else {
                 checkState(lock.isHeldByCurrentThread());
                 // It connects to somewhere on the chain. Not necessarily the top of the best known chain.
-                params.checkDifficultyTransitions(storedPrev, block, blockStore);
+                params.checkDifficultyTransitions(storedPrev, block, blockStore, this);
                 connectBlock(block, storedPrev, shouldVerifyTransactions(), filteredTxHashList, filteredTxn);
             }
 
@@ -714,7 +714,7 @@ public abstract class AbstractBlockChain {
     /**
      * Gets the median timestamp of the last 11 blocks
      */
-    private static long getMedianTimestampOfRecentBlocks(StoredBlock storedBlock,
+    public static long getMedianTimestampOfRecentBlocks(StoredBlock storedBlock,
                                                          BlockStore store) throws BlockStoreException {
         long[] timestamps = new long[11];
         int unused = 9;

@@ -20,22 +20,14 @@ package org.bitcoinj.params;
 import java.math.BigInteger;
 import java.util.concurrent.TimeUnit;
 
-import org.bitcoinj.core.Block;
-import org.bitcoinj.core.Coin;
-import org.bitcoinj.core.NetworkParameters;
-import org.bitcoinj.core.StoredBlock;
-import org.bitcoinj.core.Transaction;
-import org.bitcoinj.core.Utils;
+import org.bitcoinj.core.*;
 import org.bitcoinj.utils.MonetaryFormat;
-import org.bitcoinj.core.VerificationException;
 import org.bitcoinj.store.BlockStore;
 import org.bitcoinj.store.BlockStoreException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Stopwatch;
-
-import org.bitcoinj.core.BitcoinSerializer;
 
 /**
  * Parameters for Bitcoin-like networks.
@@ -63,11 +55,61 @@ public abstract class AbstractBitcoinNetParams extends NetworkParameters {
 
     @Override
     public void checkDifficultyTransitions(final StoredBlock storedPrev, final Block nextBlock,
-    	final BlockStore blockStore) throws VerificationException, BlockStoreException {
+    	final BlockStore blockStore, AbstractBlockChain blockChain) throws VerificationException, BlockStoreException {
         Block prev = storedPrev.getHeader();
 
         // Is this supposed to be a difficulty transition point?
         if (!isDifficultyTransitionPoint(storedPrev)) {
+
+            if(storedPrev.getHeader().getDifficultyTargetAsInteger().equals(getMaxTarget()))
+            {
+                // No ... so check the difficulty didn't actually change.
+                if (nextBlock.getDifficultyTarget() != prev.getDifficultyTarget())
+                    throw new VerificationException("Unexpected change in difficulty at height " + storedPrev.getHeight() +
+                            ": " + Long.toHexString(nextBlock.getDifficultyTarget()) + " vs " +
+                            Long.toHexString(prev.getDifficultyTarget()));
+                return;
+            }
+            // If producing the last 6 block took less than 12h, we keep the same
+            // difficulty.
+            StoredBlock cursor = blockStore.get(prev.getHash());
+            for (int i = 0; i < 6; i++) {
+                if (cursor == null) {
+                    return;
+                    // This should never happen. If it does, it means we are following an incorrect or busted chain.
+                    //throw new VerificationException(
+                      //      "We did not find a way back to the genesis block.");
+                }
+                cursor = blockStore.get(cursor.getHeader().getPrevBlockHash());
+            }
+            long mpt6blocks = 0;
+            try {
+                mpt6blocks = blockChain.getMedianTimestampOfRecentBlocks(storedPrev, blockStore) - blockChain.getMedianTimestampOfRecentBlocks(cursor, blockStore);
+            } catch (NullPointerException x)
+            {
+                return;
+            }
+
+            // If producing the last 6 block took more than 12h, increase the difficulty
+            // target by 1/4 (which reduces the difficulty by 20%). This ensure the
+            // chain do not get stuck in case we lose hashrate abruptly.
+            if(mpt6blocks >= 12 * 3600)
+            {
+                BigInteger nPow = storedPrev.getHeader().getDifficultyTargetAsInteger();
+                nPow = nPow.add(nPow.shiftRight(2));
+
+                if(nPow.compareTo(getMaxTarget()) > 0)
+                    nPow = getMaxTarget();
+
+                if (nextBlock.getDifficultyTarget() != Utils.encodeCompactBits(nPow))
+                    throw new VerificationException("Unexpected change in difficulty [6 blocks >12 hours] at height " + storedPrev.getHeight() +
+                            ": " + Long.toHexString(nextBlock.getDifficultyTarget()) + " vs " +
+                            Utils.encodeCompactBits(nPow));
+                return;
+            }
+
+
+
 
             // No ... so check the difficulty didn't actually change.
             if (nextBlock.getDifficultyTarget() != prev.getDifficultyTarget())
