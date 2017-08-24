@@ -140,7 +140,9 @@ public class PaymentChannelV2ClientState extends PaymentChannelClientState {
             refundFees = multisigFee;
         }
 
-        TransactionSignature refundSignature =
+        TransactionSignature refundSignature = refundTx.getVersion() >= Transaction.FORKID_VERSION ?
+                refundTx.calculateWitnessSignature(0, myKey.maybeDecrypt(userKey),
+                        getSignedScript(), refundTx.getInput(0).getConnectedOutput().getValue(), Transaction.SigHash.ALL, false) :
                 refundTx.calculateSignature(0, myKey.maybeDecrypt(userKey),
                         getSignedScript(), Transaction.SigHash.ALL, false);
         refundTx.getInput(0).setScriptSig(ScriptBuilder.createCLTVPaymentChannelP2SHRefund(refundSignature, redeemScript));

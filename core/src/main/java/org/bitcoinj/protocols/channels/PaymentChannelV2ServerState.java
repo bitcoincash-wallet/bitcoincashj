@@ -133,7 +133,10 @@ public class PaymentChannelV2ServerState extends PaymentChannelServerState {
 
     // Signs the first input of the transaction which must spend the multisig contract.
     private void signP2SHInput(Transaction tx, Transaction.SigHash hashType, boolean anyoneCanPay) {
-        TransactionSignature signature = tx.calculateSignature(0, serverKey, createP2SHRedeemScript(), hashType, anyoneCanPay);
+        TransactionSignature signature = tx.getVersion() >= Transaction.FORKID_VERSION ?
+                tx.calculateWitnessSignature(0, serverKey, createP2SHRedeemScript(), tx.getInput(0).getConnectedOutput().getValue(), hashType, anyoneCanPay):
+                tx.calculateSignature(0, serverKey, createP2SHRedeemScript(), hashType, anyoneCanPay);
+
         byte[] mySig = signature.encodeToBitcoin();
         Script scriptSig = ScriptBuilder.createCLTVPaymentChannelP2SHInput(bestValueSignature, mySig, createP2SHRedeemScript());
         tx.getInput(0).setScriptSig(scriptSig);

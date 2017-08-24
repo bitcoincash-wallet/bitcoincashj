@@ -238,7 +238,9 @@ public class PaymentChannelV1ClientState extends PaymentChannelClientState {
         } catch (ScriptException e) {
             throw new RuntimeException(e);  // Cannot happen: we built this ourselves.
         }
-        TransactionSignature ourSignature =
+        TransactionSignature ourSignature = refundTx.getVersion() >= Transaction.FORKID_VERSION ?
+                refundTx.calculateWitnessSignature(0, myKey.maybeDecrypt(userKey),
+                        multisigScript, refundTx.getInput(0).getConnectedOutput().getValue(), Transaction.SigHash.ALL, false) :
                 refundTx.calculateSignature(0, myKey.maybeDecrypt(userKey),
                         multisigScript, Transaction.SigHash.ALL, false);
         // Insert the signatures.

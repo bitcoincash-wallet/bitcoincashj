@@ -147,7 +147,9 @@ public class PaymentChannelV1ServerState extends PaymentChannelServerState {
         Script multisigPubKey = ScriptBuilder.createMultiSigOutputScript(2, ImmutableList.of(clientKey, serverKey));
         // We are really only signing the fact that the transaction has a proper lock time and don't care about anything
         // else, so we sign SIGHASH_NONE and SIGHASH_ANYONECANPAY.
-        TransactionSignature sig = refundTx.calculateSignature(0, serverKey, multisigPubKey, Transaction.SigHash.NONE, true);
+        TransactionSignature sig = refundTx.getVersion() >= Transaction.FORKID_VERSION ?
+                refundTx.calculateWitnessSignature(0, serverKey, multisigPubKey, refundTx.getInput(0).getConnectedOutput().getValue(), Transaction.SigHash.NONE, true):
+                refundTx.calculateSignature(0, serverKey, multisigPubKey, Transaction.SigHash.NONE, true);
         log.info("Signed refund transaction.");
         this.clientOutput = refundTx.getOutput(0);
         stateMachine.transition(State.WAITING_FOR_MULTISIG_CONTRACT);
@@ -164,7 +166,10 @@ public class PaymentChannelV1ServerState extends PaymentChannelServerState {
 
     // Signs the first input of the transaction which must spend the multisig contract.
     private void signMultisigInput(Transaction tx, Transaction.SigHash hashType, boolean anyoneCanPay) {
-        TransactionSignature signature = tx.calculateSignature(0, serverKey, getContractScript(), hashType, anyoneCanPay);
+        //TransactionSignature signature = tx.calculateSignature(0, serverKey, getContractScript(), hashType, anyoneCanPay, true);
+        TransactionSignature signature = tx.getVersion() >= Transaction.FORKID_VERSION ?
+                tx.calculateWitnessSignature(0, serverKey, getContractScript(), tx.getInput(0).getConnectedOutput().getValue(), Transaction.SigHash.NONE, true):
+                tx.calculateSignature(0, serverKey, getContractScript(), hashType, true);
         byte[] mySig = signature.encodeToBitcoin();
         Script scriptSig = ScriptBuilder.createMultiSigInputScriptBytes(ImmutableList.of(bestValueSignature, mySig));
         tx.getInput(0).setScriptSig(scriptSig);

@@ -315,7 +315,9 @@ public abstract class PaymentChannelClientState {
             mode = Transaction.SigHash.NONE;
         else
             mode = Transaction.SigHash.SINGLE;
-        TransactionSignature sig = tx.calculateSignature(0, myKey.maybeDecrypt(userKey), getSignedScript(), mode, true);
+        TransactionSignature sig = tx.getVersion() >= Transaction.FORKID_VERSION ?
+                tx.calculateWitnessSignature(0, myKey.maybeDecrypt(userKey), getSignedScript(), tx.getInput(0).getConnectedOutput().getValue(), mode, true) :
+                tx.calculateSignature(0, myKey.maybeDecrypt(userKey), getSignedScript(), mode, true);
         valueToMe = newValueToMe;
         updateChannelInWallet();
         IncrementedPayment payment = new IncrementedPayment();

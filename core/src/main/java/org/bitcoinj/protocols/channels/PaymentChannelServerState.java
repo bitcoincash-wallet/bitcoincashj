@@ -282,7 +282,9 @@ public abstract class PaymentChannelServerState {
         // Now check the signature is correct.
         // Note that the client must sign with SIGHASH_{SINGLE/NONE} | SIGHASH_ANYONECANPAY to allow us to add additional
         // inputs (in case we need to add significant fee, or something...) and any outputs we want to pay to.
-        Sha256Hash sighash = req.tx.hashForSignature(0, getSignedScript(), mode, true);
+        Sha256Hash sighash = req.tx.getVersion() >= Transaction.FORKID_VERSION ?
+                req.tx.hashForSignatureWitness(0, getSignedScript(), req.tx.getInput(0).getConnectedOutput().getValue(), mode, true):
+                req.tx.hashForSignature(0, getSignedScript(), mode, true);
 
         if (!getClientKey().verify(sighash, signature))
             throw new VerificationException("Signature does not verify on tx\n" + req.tx);
