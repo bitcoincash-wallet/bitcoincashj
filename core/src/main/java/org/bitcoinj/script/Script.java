@@ -62,7 +62,7 @@ public class Script {
         P2SH
     }
 
-    /** Flags to pass to {@link Script#correctlySpends(Transaction, long, Script, Set)}.
+    /** Flags to pass to {@link Script#correctlySpends(Transaction, long, Script, Coin, Set)}.
      * Note currently only P2SH, DERSIG and NULLDUMMY are actually supported.
      */
     public enum VerifyFlag {
@@ -75,7 +75,8 @@ public class Script {
         MINIMALDATA, // Require minimal encodings for all push operations
         DISCOURAGE_UPGRADABLE_NOPS, // Discourage use of NOPs reserved for upgrades (NOP1-10)
         CLEANSTACK, // Require that only a single stack element remains after evaluation.
-        CHECKLOCKTIMEVERIFY // Enable CHECKLOCKTIMEVERIFY operation
+        CHECKLOCKTIMEVERIFY, // Enable CHECKLOCKTIMEVERIFY operation
+        ENABLESIGHASHFORKID
     }
     public static final EnumSet<VerifyFlag> ALL_VERIFY_FLAGS = EnumSet.allOf(VerifyFlag.class);
 
@@ -849,7 +850,13 @@ public class Script {
             ? EnumSet.of(VerifyFlag.NULLDUMMY)
             : EnumSet.noneOf(VerifyFlag.class);
 
-        executeScript(txContainingThis, index, script, stack, flags);
+        executeScript(txContainingThis, index, script, stack, Coin.ZERO, flags);
+    }
+
+    @Deprecated
+    public static void executeScript(@Nullable Transaction txContainingThis, long index,
+                                     Script script, LinkedList<byte[]> stack, Set<VerifyFlag> verifyFlags) throws ScriptException {
+         executeScript(txContainingThis, index, script, stack, Coin.ZERO, verifyFlags);
     }
 
     /**
@@ -860,7 +867,7 @@ public class Script {
      * likely to change in future.
      */
     public static void executeScript(@Nullable Transaction txContainingThis, long index,
-                                     Script script, LinkedList<byte[]> stack, Set<VerifyFlag> verifyFlags) throws ScriptException {
+                                     Script script, LinkedList<byte[]> stack, Coin value, Set<VerifyFlag> verifyFlags) throws ScriptException {
         int opCount = 0;
         int lastCodeSepLocation = 0;
         
@@ -1337,13 +1344,13 @@ public class Script {
                 case OP_CHECKSIGVERIFY:
                     if (txContainingThis == null)
                         throw new IllegalStateException("Script attempted signature check but no tx was provided");
-                    executeCheckSig(txContainingThis, (int) index, script, stack, lastCodeSepLocation, opcode, verifyFlags);
+                    executeCheckSig(txContainingThis, (int) index, script, stack, lastCodeSepLocation, opcode, value, verifyFlags);
                     break;
                 case OP_CHECKMULTISIG:
                 case OP_CHECKMULTISIGVERIFY:
                     if (txContainingThis == null)
                         throw new IllegalStateException("Script attempted signature check but no tx was provided");
-                    opCount = executeMultiSig(txContainingThis, (int) index, script, stack, opCount, lastCodeSepLocation, opcode, verifyFlags);
+                    opCount = executeMultiSig(txContainingThis, (int) index, script, stack, opCount, lastCodeSepLocation, opcode, value, verifyFlags);
                     break;
                 case OP_CHECKLOCKTIMEVERIFY:
                     if (!verifyFlags.contains(VerifyFlag.CHECKLOCKTIMEVERIFY)) {
@@ -1423,7 +1430,7 @@ public class Script {
     }
 
     private static void executeCheckSig(Transaction txContainingThis, int index, Script script, LinkedList<byte[]> stack,
-                                        int lastCodeSepLocation, int opcode, 
+                                        int lastCodeSepLocation, int opcode, Coin value,
                                         Set<VerifyFlag> verifyFlags) throws ScriptException {
         final boolean requireCanonical = verifyFlags.contains(VerifyFlag.STRICTENC)
             || verifyFlags.contains(VerifyFlag.DERSIG)
@@ -1451,7 +1458,9 @@ public class Script {
                 verifyFlags.contains(VerifyFlag.LOW_S));
 
             // TODO: Should check hash type is known
-            Sha256Hash hash = txContainingThis.hashForSignature(index, connectedScript, (byte) sig.sighashFlags);
+            Sha256Hash hash = sig.useForkId() ?
+                                txContainingThis.hashForSignatureWitness(index, connectedScript, value, sig.sigHashMode(), sig.anyoneCanPay()) :
+                                txContainingThis.hashForSignature(index, connectedScript, (byte) sig.sighashFlags);
             sigValid = ECKey.verify(hash.getBytes(), sig, pubKey);
         } catch (Exception e1) {
             // There is (at least) one exception that could be hit here (EOFException, if the sig is too short)
@@ -1471,7 +1480,7 @@ public class Script {
     }
 
     private static int executeMultiSig(Transaction txContainingThis, int index, Script script, LinkedList<byte[]> stack,
-                                       int opCount, int lastCodeSepLocation, int opcode, 
+                                       int opCount, int lastCodeSepLocation, int opcode, Coin value,
                                        Set<VerifyFlag> verifyFlags) throws ScriptException {
         final boolean requireCanonical = verifyFlags.contains(VerifyFlag.STRICTENC)
             || verifyFlags.contains(VerifyFlag.DERSIG)
@@ -1525,7 +1534,9 @@ public class Script {
             // more expensive than hashing, its not a big deal.
             try {
                 TransactionSignature sig = TransactionSignature.decodeFromBitcoin(sigs.getFirst(), requireCanonical);
-                Sha256Hash hash = txContainingThis.hashForSignature(index, connectedScript, (byte) sig.sighashFlags);
+                Sha256Hash hash = sig.useForkId() ?
+                        txContainingThis.hashForSignatureWitness(index, connectedScript, value, sig.sigHashMode(), sig.anyoneCanPay()):
+                        txContainingThis.hashForSignature(index, connectedScript, (byte) sig.sighashFlags);
                 if (ECKey.verify(hash.getBytes(), sig, pubKey))
                     sigs.pollFirst();
             } catch (Exception e) {
@@ -1567,9 +1578,15 @@ public class Script {
     @Deprecated
     public void correctlySpends(Transaction txContainingThis, long scriptSigIndex, Script scriptPubKey)
             throws ScriptException {
-        correctlySpends(txContainingThis, scriptSigIndex, scriptPubKey, ALL_VERIFY_FLAGS);
+        correctlySpends(txContainingThis, scriptSigIndex, scriptPubKey, Coin.ZERO, ALL_VERIFY_FLAGS);
     }
 
+    @Deprecated
+    public void correctlySpends(Transaction txContainingThis, long scriptSigIndex, Script scriptPubKey,
+                                Set<VerifyFlag> verifyFlags)
+            throws ScriptException {
+        correctlySpends(txContainingThis, scriptSigIndex, scriptPubKey, Coin.ZERO, verifyFlags);
+    }
     /**
      * Verifies that this script (interpreted as a scriptSig) correctly spends the given scriptPubKey.
      * @param txContainingThis The transaction in which this input scriptSig resides.
@@ -1579,7 +1596,7 @@ public class Script {
      * @param verifyFlags Each flag enables one validation rule. If in doubt, use {@link #correctlySpends(Transaction, long, Script)}
      *                    which sets all flags.
      */
-    public void correctlySpends(Transaction txContainingThis, long scriptSigIndex, Script scriptPubKey,
+    public void correctlySpends(Transaction txContainingThis, long scriptSigIndex, Script scriptPubKey, Coin value,
                                 Set<VerifyFlag> verifyFlags) throws ScriptException {
         // Clone the transaction because executing the script involves editing it, and if we die, we'll leave
         // the tx half broken (also it's not so thread safe to work on it directly.
@@ -1594,10 +1611,10 @@ public class Script {
         LinkedList<byte[]> stack = new LinkedList<byte[]>();
         LinkedList<byte[]> p2shStack = null;
         
-        executeScript(txContainingThis, scriptSigIndex, this, stack, verifyFlags);
+        executeScript(txContainingThis, scriptSigIndex, this, stack, value, verifyFlags);
         if (verifyFlags.contains(VerifyFlag.P2SH))
             p2shStack = new LinkedList<byte[]>(stack);
-        executeScript(txContainingThis, scriptSigIndex, scriptPubKey, stack, verifyFlags);
+        executeScript(txContainingThis, scriptSigIndex, scriptPubKey, stack, value, verifyFlags);
         
         if (stack.size() == 0)
             throw new ScriptException("Stack empty at end of script execution.");
@@ -1626,7 +1643,7 @@ public class Script {
             byte[] scriptPubKeyBytes = p2shStack.pollLast();
             Script scriptPubKeyP2SH = new Script(scriptPubKeyBytes);
             
-            executeScript(txContainingThis, scriptSigIndex, scriptPubKeyP2SH, p2shStack, verifyFlags);
+            executeScript(txContainingThis, scriptSigIndex, scriptPubKeyP2SH, p2shStack, value, verifyFlags);
             
             if (p2shStack.size() == 0)
                 throw new ScriptException("P2SH stack empty at end of script execution.");

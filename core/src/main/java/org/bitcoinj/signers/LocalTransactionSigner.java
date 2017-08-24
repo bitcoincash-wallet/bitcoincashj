@@ -17,10 +17,8 @@
 package org.bitcoinj.signers;
 
 import java.util.EnumSet;
-import org.bitcoinj.core.ECKey;
-import org.bitcoinj.core.ScriptException;
-import org.bitcoinj.core.Transaction;
-import org.bitcoinj.core.TransactionInput;
+
+import org.bitcoinj.core.*;
 import org.bitcoinj.crypto.DeterministicKey;
 import org.bitcoinj.crypto.TransactionSignature;
 import org.bitcoinj.script.Script;
@@ -72,7 +70,7 @@ public class LocalTransactionSigner extends StatelessTransactionSigner {
                 // We assume if its already signed, its hopefully got a SIGHASH type that will not invalidate when
                 // we sign missing pieces (to check this would require either assuming any signatures are signing
                 // standard output types or a way to get processed signatures out of script execution)
-                txIn.getScriptSig().correctlySpends(tx, i, txIn.getConnectedOutput().getScriptPubKey(), MINIMUM_VERIFY_FLAGS);
+                txIn.getScriptSig().correctlySpends(tx, i, txIn.getConnectedOutput().getScriptPubKey(), txIn.getConnectedOutput().getValue(), MINIMUM_VERIFY_FLAGS);
                 log.warn("Input {} already correctly spends output, assuming SIGHASH type used will be safe and skipping signing.", i);
                 continue;
             } catch (ScriptException e) {
@@ -104,7 +102,9 @@ public class LocalTransactionSigner extends StatelessTransactionSigner {
             // a CHECKMULTISIG program for P2SH inputs
             byte[] script = redeemData.redeemScript.getProgram();
             try {
-                TransactionSignature signature = tx.calculateSignature(i, key, script, Transaction.SigHash.ALL, false);
+                TransactionSignature signature = propTx.useForkId ?
+                        tx.calculateWitnessSignature(i, key, script, tx.getInput(i).getConnectedOutput().getValue(), Transaction.SigHash.ALL, false) :
+                        tx.calculateSignature(i, key, script, Transaction.SigHash.ALL, false);
 
                 // at this point we have incomplete inputScript with OP_0 in place of one or more signatures. We already
                 // have calculated the signature using the local key and now need to insert it in the correct place

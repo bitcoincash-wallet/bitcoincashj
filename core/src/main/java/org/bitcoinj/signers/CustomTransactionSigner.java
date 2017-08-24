@@ -81,9 +81,11 @@ public abstract class CustomTransactionSigner extends StatelessTransactionSigner
                 continue;
             }
 
-            Sha256Hash sighash = tx.hashForSignature(i, redeemData.redeemScript, Transaction.SigHash.ALL, false);
+            Sha256Hash sighash = propTx.useForkId ?
+                    tx.hashForSignatureWitness(i, redeemData.redeemScript, tx.getInput(i).getConnectedOutput().getValue(), Transaction.SigHash.ALL, false) :
+                    tx.hashForSignature(i, redeemData.redeemScript, Transaction.SigHash.ALL, false);
             SignatureAndKey sigKey = getSignature(sighash, propTx.keyPaths.get(scriptPubKey));
-            TransactionSignature txSig = new TransactionSignature(sigKey.sig, Transaction.SigHash.ALL, false);
+            TransactionSignature txSig = new TransactionSignature(sigKey.sig, Transaction.SigHash.ALL, false, propTx.useForkId);
             int sigIndex = inputScript.getSigInsertionIndex(sighash, sigKey.pubKey);
             inputScript = scriptPubKey.getScriptSigWithSignature(inputScript, txSig.encodeToBitcoin(), sigIndex);
             txIn.setScriptSig(inputScript);

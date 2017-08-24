@@ -3923,6 +3923,10 @@ public class Wallet extends BaseTaggableObject
         lock.lock();
         try {
             checkArgument(!req.completed, "Given SendRequest has already been completed.");
+            // set version
+            if(req.getUseForkId())
+                req.tx.setVersion(Transaction.CURRENT_VERSION);
+
             // Calculate the amount of value we need to import.
             Coin value = Coin.ZERO;
             for (TransactionOutput output : req.tx.getOutputs()) {
@@ -4068,7 +4072,7 @@ public class Wallet extends BaseTaggableObject
                 txIn.setScriptSig(scriptPubKey.createEmptyInputScript(redeemData.keys.get(0), redeemData.redeemScript));
             }
 
-            TransactionSigner.ProposedTransaction proposal = new TransactionSigner.ProposedTransaction(tx);
+            TransactionSigner.ProposedTransaction proposal = new TransactionSigner.ProposedTransaction(tx, req.getUseForkId());
             for (TransactionSigner signer : signers) {
                 if (!signer.signInputs(proposal, maybeDecryptingKeyBag))
                     log.info("{} returned false for the tx", signer.getClass().getName());
