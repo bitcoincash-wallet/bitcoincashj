@@ -169,7 +169,8 @@ public class FullPrunedBlockChain extends AbstractBlockChain {
             try {
                 ListIterator<Script> prevOutIt = prevOutScripts.listIterator();
                 for (int index = 0; index < tx.getInputs().size(); index++) {
-                    tx.getInputs().get(index).getScriptSig().correctlySpends(tx, index, prevOutIt.next(), verifyFlags);
+                    Coin value = tx.getInput(index).getConnectedOutput() != null ? tx.getInput(index).getConnectedOutput().getValue() : Coin.ZERO;
+                    tx.getInputs().get(index).getScriptSig().correctlySpends(tx, index, prevOutIt.next(), value, verifyFlags);
                 }
             } catch (VerificationException e) {
                 return e;
