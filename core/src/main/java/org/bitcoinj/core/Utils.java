@@ -646,4 +646,7 @@ public class Utils {
             throw new RuntimeException(e);
         }
     }
+
+    static long ForkBlockTime = 1501593374; // 6 blocks after the fork time
+    public static boolean isAfterFork(long time) { return time >= ForkBlockTime; }
 }
