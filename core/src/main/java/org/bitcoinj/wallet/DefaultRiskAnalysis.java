@@ -137,6 +137,10 @@ public class DefaultRiskAnalysis implements RiskAnalysis {
             log.warn("TX considered non-standard due to unknown version number {}", tx.getVersion());
             return RuleViolation.VERSION;
         }
+        if (tx.getVersion() == 1) {
+            log.warn("TX considered non-standard due to version number {}.  This may be a bitcoin transaction", tx.getVersion());
+            return RuleViolation.VERSION;
+        }
 
         final List<TransactionOutput> outputs = tx.getOutputs();
         for (int i = 0; i < outputs.size(); i++) {
