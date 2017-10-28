@@ -136,6 +136,13 @@ public class TransactionSignature extends ECKey.ECDSASignature {
         return true;
     }
 
+    public static boolean hasForkId (byte[] signature)
+    {
+        int forkId = (signature[signature.length-1] & 0xff) & SigHash.FORKID.value; // mask the byte to prevent sign-extension hurting us
+
+        return forkId == SigHash.FORKID.value;
+    }
+
     public boolean anyoneCanPay() {
         return (sighashFlags & Transaction.SigHash.ANYONECANPAY.value) != 0;
     }
