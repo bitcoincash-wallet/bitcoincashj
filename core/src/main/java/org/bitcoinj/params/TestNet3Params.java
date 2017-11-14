@@ -68,6 +68,12 @@ public class TestNet3Params extends AbstractBitcoinNetParams {
         majorityEnforceBlockUpgrade = TestNet2Params.TESTNET_MAJORITY_ENFORCE_BLOCK_UPGRADE;
         majorityRejectBlockOutdated = TestNet2Params.TESTNET_MAJORITY_REJECT_BLOCK_OUTDATED;
         majorityWindow = TestNet2Params.TESTNET_MAJORITY_WINDOW;
+
+        // Aug, 1 hard fork
+        uahfHeight = 1155876;
+
+        /** Activation time at which the cash HF kicks in. */
+        cashHardForkActivationTime = 1510600000;
     }
 
     private static TestNet3Params instance;

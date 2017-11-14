@@ -41,6 +41,11 @@ public class RegTestParams extends TestNet2Params {
         majorityEnforceBlockUpgrade = MainNetParams.MAINNET_MAJORITY_ENFORCE_BLOCK_UPGRADE;
         majorityRejectBlockOutdated = MainNetParams.MAINNET_MAJORITY_REJECT_BLOCK_OUTDATED;
         majorityWindow = MainNetParams.MAINNET_MAJORITY_WINDOW;
+
+        // Hard fork is always enabled on regtest.
+        uahfHeight = 0;
+        // Nov, 13 hard fork is always on on regtest.
+        cashHardForkActivationTime = 0;
     }
 
     @Override
