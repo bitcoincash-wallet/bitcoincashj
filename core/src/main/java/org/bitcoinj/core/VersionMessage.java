@@ -37,10 +37,12 @@ import java.util.Locale;
  */
 public class VersionMessage extends Message {
 
-    /** A services flag that denotes whether the peer has a copy of the block chain or not. */
-    public static final int NODE_NETWORK = 1;
-    /** A flag that denotes whether the peer supports the getutxos message or not. */
-    public static final int NODE_GETUTXOS = 2;
+    /** A service bit that denotes whether the peer has a copy of the block chain or not. */
+    public static final int NODE_NETWORK = 1 << 0;
+    /** A service bit that denotes whether the peer supports the getutxos message or not. */
+    public static final int NODE_GETUTXOS = 1 << 1;
+    /** A service bit used by Bitcoin-ABC to announce Bitcoin Cash nodes. */
+    public static final int NODE_BITCOIN_CASH = 1 << 5;
 
     // NODE_BITCOIN_CASH means the node supports Bitcoin Cash and the
     // associated consensus rule changes.
@@ -86,7 +88,7 @@ public class VersionMessage extends Message {
     public boolean relayTxesBeforeFilter;
 
     /** The version of this library release, as a string. */
-    public static final String BITCOINJ_VERSION = "0.14.4";
+    public static final String BITCOINJ_VERSION = "0.14.5";
     /** The value that is prepended to the subVer field of this application. */
     public static final String LIBRARY_SUBVER = "/bitcoincashj:" + BITCOINJ_VERSION + "/";
 
