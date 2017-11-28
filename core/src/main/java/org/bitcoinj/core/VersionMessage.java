@@ -44,14 +44,6 @@ public class VersionMessage extends Message {
     /** A service bit used by Bitcoin-ABC to announce Bitcoin Cash nodes. */
     public static final int NODE_BITCOIN_CASH = 1 << 5;
 
-    // NODE_BITCOIN_CASH means the node supports Bitcoin Cash and the
-    // associated consensus rule changes.
-    // This service bit is intended to be used prior until some time after the
-    // UAHF activation when the Bitcoin Cash network has adequately separated.
-    // TODO: remove (free up) the NODE_BITCOIN_CASH service bit once no longer
-    // needed.
-    public static final int NODE_BITCOIN_CASH = 0x20;
-
     /**
      * The version number of the protocol spoken.
      */
