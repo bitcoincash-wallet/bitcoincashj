@@ -1,4 +1,3 @@
-# configuration for https://travis-ci.org/bitcoinj/bitcoinj
 sudo: false
 language: java
 jdk: oraclejdk8
@@ -15,7 +14,3 @@ after_success:
   - cd ../core
   - mvn jacoco:report coveralls:report
 
-notifications:
-  irc:
-    channels: "irc.freenode.net#bitcoinj"
-    skip_join: true
