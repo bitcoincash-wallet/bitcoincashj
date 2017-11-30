@@ -60,6 +60,10 @@ public class BlockChainTest {
     private Transaction coinbaseTransaction;
 
     private static class TweakableTestNet2Params extends TestNet2Params {
+        public TweakableTestNet2Params() {
+            super();
+            this.cashHardForkActivationTime = (System.currentTimeMillis()/1000)+24*60*60;
+        }
         public void setMaxTarget(BigInteger limit) {
             maxTarget = limit;
         }
@@ -208,7 +212,7 @@ public class BlockChainTest {
         try {
             testNetChain.add(bad);
             // We should not get here as the difficulty target should not be changing at this point.
-            //fail();
+//            fail();
             //TODO: Bitcoin Cash difficulty algorithm returns successfully if there are less than 6 blocks in the blockchain.  This test only has 3.  We will let the test finish for now.
         } catch (VerificationException e) {
             assertTrue(e.getMessage(), e.getCause().getMessage().contains("Unexpected change in difficulty"));

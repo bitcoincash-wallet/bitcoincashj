@@ -77,7 +77,7 @@ public abstract class NetworkParameters {
     protected int addressHeader;
     protected int p2shHeader;
     protected int dumpedPrivateKeyHeader;
-    protected int interval;
+    protected int interval; // blocks per difficulty cycle
     protected int targetTimespan;
     protected byte[] alertSigningKey;
     protected int bip32HeaderPub;
@@ -137,7 +137,7 @@ public abstract class NetworkParameters {
 
     public static final int TARGET_TIMESPAN = 14 * 24 * 60 * 60;  // 2 weeks per difficulty cycle, on average.
     public static final int TARGET_SPACING = 10 * 60;  // 10 minutes per block.
-    public static final int INTERVAL = TARGET_TIMESPAN / TARGET_SPACING;
+    public static final int INTERVAL = TARGET_TIMESPAN / TARGET_SPACING; // blocks per difficulty cycle
     
     /**
      * Blocks with a timestamp after this should enforce BIP 16, aka "Pay to script hash". This BIP changed the
