@@ -1,5 +1,4 @@
-
-[![Visit our IRC channel](https://kiwiirc.com/buttons/irc.freenode.net/bitcoinj.png)](https://kiwiirc.com/client/irc.freenode.net/bitcoinj)
+[![Build Status](https://travis-ci.org/bitcoincash-wallet/bitcoincashj.png?branch=release-0.14)](https://travis-ci.org/bitcoincash-wallet/bitcoincashj)   [![Coverage Status](https://coveralls.io/repos/bitcoincash-wallet/bitcoincashj/badge.png?branch=release-0.14)](https://coveralls.io/r/bitcoincash-wallet/bitcoincashj?branch=release-0.14) 
 
 ### Welcome to bitcoinj
 
