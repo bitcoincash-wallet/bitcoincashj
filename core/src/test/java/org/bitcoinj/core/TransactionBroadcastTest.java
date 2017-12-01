@@ -18,6 +18,7 @@
 package org.bitcoinj.core;
 
 import com.google.common.util.concurrent.*;
+import junit.runner.Version;
 import org.bitcoinj.core.listeners.TransactionConfidenceEventListener;
 import org.bitcoinj.testing.*;
 import org.bitcoinj.utils.*;
@@ -187,7 +188,7 @@ public class TransactionBroadcastTest extends TestWithPeerGroup {
 
         // Set up connections and block chain.
         VersionMessage ver = new VersionMessage(PARAMS, 2);
-        ver.localServices = VersionMessage.NODE_NETWORK;
+        ver.localServices = VersionMessage.NODE_NETWORK | VersionMessage.NODE_BITCOIN_CASH;
         InboundMessageQueuer p1 = connectPeer(1, ver);
         InboundMessageQueuer p2 = connectPeer(2);
 
