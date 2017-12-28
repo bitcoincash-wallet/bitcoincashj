@@ -20,6 +20,7 @@ package org.bitcoinj.params;
 import java.math.BigInteger;
 import java.util.Date;
 
+import com.google.common.base.Preconditions;
 import org.bitcoinj.core.AbstractBlockChain;
 import org.bitcoinj.core.Block;
 import org.bitcoinj.core.NetworkParameters;
@@ -79,6 +80,7 @@ public class TestNet3Params extends AbstractBitcoinNetParams {
 
         /** Activation time at which the cash HF kicks in. */
         cashHardForkActivationTime = 1510600000;
+        daaHeight = 1188697;
     }
 
     private static TestNet3Params instance;
@@ -100,7 +102,7 @@ public class TestNet3Params extends AbstractBitcoinNetParams {
     @Override
     public void checkDifficultyTransitions(final StoredBlock storedPrev, final Block nextBlock,
                                            final BlockStore blockStore, AbstractBlockChain blockChain) throws VerificationException, BlockStoreException {
-        if (!isDifficultyTransitionPoint(storedPrev) && nextBlock.getTime().after(testnetDiffDate)) {
+        if (storedPrev.getHeight() < daaHeight && !isDifficultyTransitionPoint(storedPrev) && nextBlock.getTime().after(testnetDiffDate)) {
             Block prev = storedPrev.getHeader();
 
             // After 15th February 2012 the rules on the testnet change to avoid people running up the difficulty
@@ -126,6 +128,67 @@ public class TestNet3Params extends AbstractBitcoinNetParams {
             }
         } else {
             super.checkDifficultyTransitions(storedPrev, nextBlock, blockStore, blockChain);
+        }
+    }
+    @Override
+    protected void checkNextCashWorkRequired(StoredBlock storedPrev,
+                                   Block nextBlock, BlockStore blockStore) {
+        // This cannot handle the genesis block and early blocks in general.
+        //assert(pindexPrev);
+
+
+
+        // Compute the difficulty based on the full adjustement interval.
+        int nHeight = storedPrev.getHeight();
+        Preconditions.checkState(nHeight >= this.interval);
+
+        // Get the last suitable block of the difficulty interval.
+        try {
+
+            // Special difficulty rule for testnet:
+            // If the new block's timestamp is more than 2* 10 minutes then allow
+            // mining of a min-difficulty block.
+
+                Block prev = storedPrev.getHeader();
+
+
+                final long timeDelta = nextBlock.getTimeSeconds() - prev.getTimeSeconds();
+                if (timeDelta >= 0 && timeDelta > NetworkParameters.TARGET_SPACING * 2) {
+                    if (!maxTarget.equals(nextBlock.getDifficultyTargetAsInteger()))
+                        throw new VerificationException("Testnet block transition that is not allowed: " +
+                                Long.toHexString(Utils.encodeCompactBits(maxTarget)) + " (required min difficulty) vs " +
+                                Long.toHexString(nextBlock.getDifficultyTarget()));
+                    return;
+                }
+
+            StoredBlock pindexLast = GetSuitableBlock(storedPrev, blockStore);
+            //assert (pindexLast);
+
+            // Get the first suitable block of the difficulty interval.
+            int nHeightFirst = nHeight - 144;
+
+            StoredBlock pindexFirst = storedPrev;
+
+            for (int i = 144; i > 0; --i)
+            {
+                pindexFirst = pindexFirst.getPrev(blockStore);
+                if(pindexFirst == null)
+                    return;
+            }
+
+            pindexFirst = GetSuitableBlock(pindexFirst, blockStore);
+            //assert (pindexFirst);
+
+            // Compute the target based on time and work done during the interval.
+            BigInteger nextTarget =
+                    ComputeTarget(pindexFirst, pindexLast);
+
+            verifyDifficulty(nextTarget, nextBlock);
+        }
+        catch (BlockStoreException x)
+        {
+            //this means we don't have enough blocks, yet.  let it go until we do.
+            return;
         }
     }
 }
