@@ -696,7 +696,7 @@ public class DeterministicKeyChain implements EncryptableKeyChain {
         }
     }
 
-    /**
+    /**g
      * Return true if this keychain is following another keychain
      */
     public boolean isFollowing() {
@@ -740,11 +740,11 @@ public class DeterministicKeyChain implements EncryptableKeyChain {
             detKey.setChainCode(ByteString.copyFrom(key.getChainCode()));
             for (ChildNumber num : key.getPath())
                 detKey.addPath(num.i());
-            if (key.equals(externalParentKey)) {
+            if (Arrays.equals(key.getPubKey(), externalParentKey.getPubKey())) {
                 detKey.setIssuedSubkeys(issuedExternalKeys);
                 detKey.setLookaheadSize(lookaheadSize);
                 detKey.setSigsRequiredToSpend(getSigsRequiredToSpend());
-            } else if (key.equals(internalParentKey)) {
+            } else if (Arrays.equals(key.getPubKey(), internalParentKey.getPubKey())) {
                 detKey.setIssuedSubkeys(issuedInternalKeys);
                 detKey.setLookaheadSize(lookaheadSize);
                 detKey.setSigsRequiredToSpend(getSigsRequiredToSpend());
