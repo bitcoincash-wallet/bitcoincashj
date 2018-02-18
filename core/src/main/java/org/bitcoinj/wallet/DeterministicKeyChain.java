@@ -696,7 +696,7 @@ public class DeterministicKeyChain implements EncryptableKeyChain {
         }
     }
 
-    /**g
+    /**
      * Return true if this keychain is following another keychain
      */
     public boolean isFollowing() {
